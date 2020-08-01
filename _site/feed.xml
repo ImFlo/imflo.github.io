@@ -1,1 +1,109 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.1.1">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2020-08-01T17:27:55+02:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">Just another useless blog</title><subtitle>Write an awesome description for your new site here. You can edit this line in _config.yml. It will appear in your document head meta (for Google search results) and in your feed.xml site description.</subtitle><entry><title type="html">Ping attribute and CSRF</title><link href="http://localhost:4000/web/csrf/2020/08/01/ping-csrf.html" rel="alternate" type="text/html" title="Ping attribute and CSRF" /><published>2020-08-01T00:00:00+02:00</published><updated>2020-08-01T00:00:00+02:00</updated><id>http://localhost:4000/web/csrf/2020/08/01/ping-csrf</id><content type="html" xml:base="http://localhost:4000/web/csrf/2020/08/01/ping-csrf.html">&lt;h1 id=&quot;coucou&quot;&gt;Coucou&lt;/h1&gt;</content><author><name></name></author><category term="web" /><category term="csrf" /><summary type="html">Coucou</summary></entry></feed>
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.1.1">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2020-08-01T19:13:32+02:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">Just another useless blog</title><subtitle>Juste un petit blog pour poster des idée ou des write up de CTF, rien de fifou.</subtitle><entry><title type="html">Ping attribute and CSRF</title><link href="http://localhost:4000/web/csrf/2020/08/01/ping-csrf.html" rel="alternate" type="text/html" title="Ping attribute and CSRF" /><published>2020-08-01T00:00:00+02:00</published><updated>2020-08-01T00:00:00+02:00</updated><id>http://localhost:4000/web/csrf/2020/08/01/ping-csrf</id><content type="html" xml:base="http://localhost:4000/web/csrf/2020/08/01/ping-csrf.html">&lt;h2 id=&quot;introduction&quot;&gt;Introduction&lt;/h2&gt;
+
+&lt;p&gt;L’attribut ping de l’élément ancre de la spécification HTML permet selon la MDN :&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Contient une liste d'URL séparées par des espaces vers lesquelles sont envoyées des requêtes POST avec le corps PING lorsque l'utilisateur suit le lien. Cet attribut est généralement utilisé pour tracer un utilisateur.
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;De ce fait, si je crée une page avec le code suivant, une requète POST sera envoyé à &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;example.com&lt;/code&gt;.&lt;/p&gt;
+
+&lt;div class=&quot;language-html highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nt&quot;&gt;&amp;lt;a&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;src=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;/patate&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;ping=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;https://example.com&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;click me !&lt;span class=&quot;nt&quot;&gt;&amp;lt;/a&amp;gt;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/img/csrf_01.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Cela peut avoir des utilités dans le sens où cet attribut permet de “traquer” les utilisateurs, cependant si l’utilisateur posséde des cookies sur ce site, les cookies sont envoyés avec la requête, ce qui signifie que si l’utilisateur est authentifié, celui-ci effectue un POST sur un endpoint qui est décidé par l’attaquant.&lt;/p&gt;
+
+&lt;h2 id=&quot;les-attaques-csrf&quot;&gt;les attaques CSRF&lt;/h2&gt;
+
+&lt;p&gt;Une attaque de type Cross-Site Request Forgery (ou injection de requête(s) illégitime(s) par rebond) est une attaque consitant à faire effectuer par un autre utilisateur une requète vers une page menant à de l’extraction d’information où a lui faire effectuer une action sans son consentement.&lt;/p&gt;
+
+&lt;p&gt;Cela peut avoir un impact plus ou moins élévé selon l’action qu’il est possible d’effectuer.&lt;/p&gt;
+
+&lt;p&gt;Généralement, ce type d’attaque se fait lorsqu’une xss (stockée ou refléchie) est trouvé sur le site et ainsi l’attaquant peut forger des requètes vers d’autres pages du site sans casser le Same Origin Policy, et comme il s’agit du même site, les cookies de l’utilisateur seront envoyés.&lt;/p&gt;
+
+&lt;p&gt;Une autre technique utilisée lorsqu’aucune xss n’est trouvé, l’idée est d’attaquer les endpoints “GET” disponible via l’inclusion d’image sur une page web forgée par l’attaquant et ensuite de faire visiter cette page par la victime. Les requêtes vers les images partant avec les cookies de l’utilisateur, il est alors possible de forger des requêtes GET.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/img/csrf_02.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Pour plus d’informations, je vous invite à lire l’article du site de l’ANSSI qui présente plus en détail ce type d’attaque :&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://www.cert.ssi.gouv.fr/information/CERTA-2008-INF-003/&quot;&gt;Les attaques de type « cross-site request forgery&lt;/a&gt;&lt;/p&gt;
+
+&lt;h2 id=&quot;exploitation-du-ping&quot;&gt;Exploitation du ping&lt;/h2&gt;
+
+&lt;p&gt;Bien que nous envoyons via le ping une requète POST, nous avons cependant une contrainte qui limite sérieusement son exploitation:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;nous ne controlons pas le body de la requête.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;En effet pour une requête POST il serait pourtant intéressant de gérer le corps de notre requète, afin de passer les paramètres que nous souhaitons.&lt;/p&gt;
+
+&lt;p&gt;Cependant, celle-ci reste parfaitement exploitable sur différentes cibles.&lt;/p&gt;
+
+&lt;h3 id=&quot;api&quot;&gt;API&lt;/h3&gt;
+
+&lt;p&gt;Dans un monde où la plus part des applications se transforment en API web il n’est pas rare de voir des scénarios où nous avons un endpoint &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/user/&amp;lt;user_id&amp;gt;/&amp;lt;action&amp;gt;&lt;/code&gt; et que celui-ci ne prend pas de paramètre car il s’agit en vérité d’un toggle.&lt;/p&gt;
+
+&lt;p&gt;Ce type de cas est exploitable, car le corps ne sera alors pas parsé et les paramètres seront pris directement dans l’url.&lt;/p&gt;
+
+&lt;p&gt;Prenons la micro API flask ci-dessous, celle-ci est parfaitement vulnérable, car bien que nous envoyons un corps inutile, celui-ci ne sera jamais utilisé, mais l’action sera tout de même effectué.&lt;/p&gt;
+
+&lt;div class=&quot;language-python highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kn&quot;&gt;from&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;flask&lt;/span&gt; &lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Flask&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;app&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Flask&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;__name__&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+
+&lt;span class=&quot;o&quot;&gt;@&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;app&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;route&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'/user/&amp;lt;name&amp;gt;/&amp;lt;action&amp;gt;'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;methods&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'POST'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;hello_name&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;name&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;action&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;print&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;name&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;Hello {}! We will do {} !&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;format&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;name&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;action&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;__name__&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;'__main__'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;app&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;run&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;mauvais-code-php&quot;&gt;Mauvais code PHP&lt;/h3&gt;
+
+&lt;p&gt;Si nous avons besoin de passer des paramètres aux endpoints, nous sommes certes bloqués. Enfin presque ! Cela serait sans compter sur les meilleurs amis du pentest, les développeurs !&lt;/p&gt;
+
+&lt;p&gt;En effet, dans certains cas il est possible de passer les paramètres de notre requête POST dans l’url et ceux-ci seront tout de même utilisés dans le traitement.&lt;/p&gt;
+
+&lt;p&gt;Par exemple en PHP, il est parfois possible de croiser l’utilisation de &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;$_REQUEST&lt;/code&gt; en lieu et place de &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;$_GET&lt;/code&gt; ou &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;$_POST&lt;/code&gt;, ce qui a pour effet que lors d’une requête, le paramètre sera d’abord récupéré dans le &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;$_GET&lt;/code&gt; puis le &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;$_POST&lt;/code&gt; et enfin dans les cookies.&lt;/p&gt;
+
+&lt;p&gt;Prenons par exemple le code php suivant :&lt;/p&gt;
+
+&lt;div class=&quot;language-php highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;cp&quot;&gt;&amp;lt;?php&lt;/span&gt;
+&lt;span class=&quot;nb&quot;&gt;session_start&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;!&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;isset&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$_SESSION&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'user'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])){&lt;/span&gt;
+	&lt;span class=&quot;nv&quot;&gt;$_SESSION&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'user'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'ImFlo'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$_SERVER&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'REQUEST_METHOD'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;===&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'POST'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;isset&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$_REQUEST&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'usr'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]))&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+		&lt;span class=&quot;nv&quot;&gt;$_SESSION&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'user'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$_REQUEST&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;'usr'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;];&lt;/span&gt;
+	&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;&amp;lt;h1&amp;gt;&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$_SESSION&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;user&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&amp;lt;/h1&amp;gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Il nous est parfaitement possible de l’attaquer avec le ping suivant :&lt;/p&gt;
+
+&lt;div class=&quot;language-html highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nt&quot;&gt;&amp;lt;a&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;href=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;#&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;ping=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;https://victim.local/foo.php?usr=patate&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;click me&lt;span class=&quot;nt&quot;&gt;&amp;lt;/a&amp;gt;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Le paramètre &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;usr&lt;/code&gt; se trouvant dans l’url et celui-ci étant récupéré via &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;$_REQUEST&lt;/code&gt;, il sera alors utilisé lorsque la requête POST sera reçu par le site victime.&lt;/p&gt;
+
+&lt;h2 id=&quot;conclusion&quot;&gt;Conclusion&lt;/h2&gt;
+
+&lt;p&gt;Bien que la surface d’attaque de cet attribut soit moindre, du fait qu’il requiert plusieurs conditions préalables pour être utile à une attaque CSRF. Il reste néanmoins intéressant de contrôler si celui-ci n’est pas exploitable, surtout si aucun token anti-csrf n’est présent.&lt;/p&gt;
+
+&lt;p&gt;Pour contrôler son exploitation, il est juste necessaire de controler via Burp ou autre si:&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;les paramètres de la requète sont utiles et utilisés, en les retirant&lt;/li&gt;
+  &lt;li&gt;essayer de les passer dans le query string afin de voir si ce contournement est possible&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Si une de ces conditions est vrai alors vous aurez une CSRF via cette technique.&lt;/p&gt;</content><author><name></name></author><category term="web" /><category term="csrf" /><summary type="html">Introduction</summary></entry></feed>

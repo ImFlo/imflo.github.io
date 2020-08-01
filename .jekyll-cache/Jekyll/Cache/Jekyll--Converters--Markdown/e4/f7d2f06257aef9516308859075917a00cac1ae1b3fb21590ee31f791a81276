@@ -1,0 +1,110 @@
+I"�&<h2 id="introduction">Introduction</h2>
+
+<p>L’attribut ping de l’élément ancre de la spécification HTML permet selon la MDN :</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Contient une liste d'URL séparées par des espaces vers lesquelles sont envoyées des requêtes POST avec le corps PING lorsque l'utilisateur suit le lien. Cet attribut est généralement utilisé pour tracer un utilisateur.
+</code></pre></div></div>
+
+<p>De ce fait, si je une page avec le code suivant, une requète POST sera envoyé à <code class="language-plaintext highlighter-rouge">example.com</code>.</p>
+
+<div class="language-html highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;a</span> <span class="na">src=</span><span class="s">"/patate"</span> <span class="na">ping=</span><span class="s">"https://example.com"</span><span class="nt">&gt;</span>click me !<span class="nt">&lt;/a&gt;</span>
+</code></pre></div></div>
+
+<p><img src="/assets/img/csrf_01.png" alt="" /></p>
+
+<p>Cela peut avoir des utilité dans le sens où il permet de “traquer” les utilisateurs, cependant si l’utilisateur posséde des cookies sur ce site, les cookies sont envoyés avec la requète, ce qui signifie que si l’utilisateur est authentifié, celui-ci effectue un POST sur un endpoint qui est décidé par l’attaquant.</p>
+
+<h2 id="les-attaques-csrf">les attaques CSRF</h2>
+
+<p>Une attaque de type Cross-Site Request Forgery (ou injection de requête(s) illégitime(s) par rebond) est une attaque consitant à faire effectuer par un autre utilisateur une requète vers une page menant à de l’extraction d’information où a lui faire effectuer une action sans son concentement.</p>
+
+<p>Cela peut avoir un impact plus ou moins éléver selon l’action qu’il est possible d’effectuer.</p>
+
+<p>Généralement, ce type d’attaque se fais lorsqu’une xss (stocké ou refléchie) est trouvé sur le site et ainsi l’attaquant peut forger des requète vers d’autres pages du site sans casser le Same Origin Policy, et comme il s’agit du méme site, les cookies de l’utilisateurs seront envoyé.</p>
+
+<p>Une autre technique utilisé lorsque aucune xss n’est trouvé est d’attaquer les endpoints “GET” disponible via l’inclusion d’image sur une page web forgé par l’attaquant et ensuite de faire visité cette page par la victime. Les requètes vers les images partant avec les cookies de l’utilisateur, il est alors possible de forger des requètes GET.</p>
+
+<p><img src="/assets/img/csrf_02.png" alt="" /></p>
+
+<p>Pour plus d’informations, je vous invite à lire l’article du site de l’ANSSI qui présente plus en détail ce type d’attaque :</p>
+
+<p><a href="https://www.cert.ssi.gouv.fr/information/CERTA-2008-INF-003/">Les attaques de type « cross-site request forgery</a></p>
+
+<h2 id="exploitation-du-ping">Exploitation du ping</h2>
+
+<p>Bien que nous envoyons via le ping une requète POST, nous avons cependant une contrainte qui limite sérieusement sont exploitation:</p>
+
+<ul>
+  <li>nous ne controlons pas le body de la requète.</li>
+</ul>
+
+<p>En effet pour une requète POST il serait pourtant interessant de gérer le corps de notre requète, afin de passer les paramètre que nous souhaitons.</p>
+
+<p>Cependant, celle-ci reste parfaitement exploitable sur différentes cibles.</p>
+
+<h3 id="api">API</h3>
+
+<p>Dans un monde où la plus part des applications se transforment en API web il n’est pas rare de voir des scénario où nous avons un endpoint <code class="language-plaintext highlighter-rouge">/user/&lt;user_id&gt;/&lt;action&gt;</code> et que celui-ci ne prend pas de paramètre car il s’agit en vérité d’un toggle.</p>
+
+<p>Ce type de cas est exploitable, car le corps ne sera alors pas parser et les paramètres seront pris directement dans l’url.</p>
+
+<p>Prennont la micro API flask ci dessous, celle-ci est parfaitement vulnérable, car bien que nous envoyons un corps inutile, celui-ci ne sera jamais utilisé, mais l’action sera tout de méme effectué.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">from</span> <span class="nn">flask</span> <span class="kn">import</span> <span class="n">Flask</span>
+
+<span class="n">app</span> <span class="o">=</span> <span class="n">Flask</span><span class="p">(</span><span class="n">__name__</span><span class="p">)</span>
+
+<span class="o">@</span><span class="n">app</span><span class="p">.</span><span class="n">route</span><span class="p">(</span><span class="s">'/user/&lt;name&gt;/&lt;action&gt;'</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s">'POST'</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">hello_name</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">action</span><span class="p">):</span>
+    <span class="k">print</span> <span class="n">name</span>
+    <span class="k">return</span> <span class="s">"Hello {}! We will do {} !"</span><span class="p">.</span><span class="nb">format</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">action</span><span class="p">)</span>
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">'__main__'</span><span class="p">:</span>
+    <span class="n">app</span><span class="p">.</span><span class="n">run</span><span class="p">()</span>
+</code></pre></div></div>
+
+<h3 id="mauvais-code-php">Mauvais code PHP</h3>
+
+<p>Si nous avons besoins de passer des paramètre aux endpoints, nous sommes certes bloqué. Enfin presque ! Cela serait sans compter sur les meilleurs amis du pentest, les développeurs !</p>
+
+<p>En effet, dans certains cas il est possible de passer les paramètres de notre requète POST dans l’url et ceux-ci seront tout de méme utilisé dans le traitement.</p>
+
+<p>Par exemple en PHP, il est parfois possible de croiser l’utilisation de <code class="language-plaintext highlighter-rouge">$_REQUEST</code> en lieu et place de <code class="language-plaintext highlighter-rouge">$_GET</code> ou <code class="language-plaintext highlighter-rouge">$_POST</code>, ce qui a pour effet que lors d’une requète le paramètre, sera d’abord récupérer dans le <code class="language-plaintext highlighter-rouge">$_GET</code> puis le <code class="language-plaintext highlighter-rouge">$_POST</code> et enfin dans les cookies.</p>
+
+<p>Prenons par exemple le code php suivant :</p>
+
+<div class="language-php highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">&lt;?php</span>
+<span class="nb">session_start</span><span class="p">();</span>
+
+<span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="nb">isset</span><span class="p">(</span><span class="nv">$_SESSION</span><span class="p">[</span><span class="s1">'user'</span><span class="p">])){</span>
+	<span class="nv">$_SESSION</span><span class="p">[</span><span class="s1">'user'</span><span class="p">]</span> <span class="o">=</span> <span class="s1">'ImFlo'</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">if</span><span class="p">(</span><span class="nv">$_SERVER</span><span class="p">[</span><span class="s1">'REQUEST_METHOD'</span><span class="p">]</span> <span class="o">===</span> <span class="s1">'POST'</span><span class="p">)</span> <span class="p">{</span>
+	<span class="k">if</span> <span class="p">(</span><span class="nb">isset</span><span class="p">(</span><span class="nv">$_REQUEST</span><span class="p">[</span><span class="s1">'usr'</span><span class="p">]))</span> <span class="p">{</span>
+		<span class="nv">$_SESSION</span><span class="p">[</span><span class="s1">'user'</span><span class="p">]</span> <span class="o">=</span> <span class="nv">$_REQUEST</span><span class="p">[</span><span class="s1">'usr'</span><span class="p">];</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+
+<span class="k">echo</span> <span class="s2">"&lt;h1&gt;</span><span class="si">{</span><span class="nv">$_SESSION</span><span class="p">[</span><span class="s2">"user"</span><span class="p">]</span><span class="si">}</span><span class="s2">&lt;/h1&gt;"</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>Il nous est parfaitement possible de l’attaquer avec le ping suivant :</p>
+
+<div class="language-html highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;a</span> <span class="na">href=</span><span class="s">"#"</span> <span class="na">ping=</span><span class="s">"https://victim.local/foo.php?usr=patate"</span><span class="nt">&gt;</span>click me<span class="nt">&lt;/a&gt;</span>
+</code></pre></div></div>
+
+<p>Le paramètre <code class="language-plaintext highlighter-rouge">usr</code> se trouvant dans l’url et celui-ci étant récupérer via <code class="language-plaintext highlighter-rouge">$_REQUEST</code>, il sera alors utilisé lorsque la requète POST sera reçu par le site victime.</p>
+
+<h2 id="conclusion">Conclusion</h2>
+
+<p>Bien que la surface d’attaque de cet attribut soit moindre, du fait qu’il requiert plusieurs condition préalable pour être utile à une attaque CSRF. Il reste néanmoins interessant de contrôler si celui-ci n’est pas exploitable, surtout si aucun token anti-csrf n’est présent.</p>
+
+<p>Pour contrôler son exploitation, il est juste necessaire de controler via Burp ou autre si:</p>
+<ul>
+  <li>les paramètre de la requète sont utile et utilisé, en les retirant</li>
+  <li>essayer de les passer dans le query string afin de voir si ce contournement est possible</li>
+</ul>
+
+<p>Si une de ces condition est vrai alors vous aurez une CSRF via cette technique.</p>
+:ET

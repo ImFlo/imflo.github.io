@@ -4,4 +4,116 @@ title:  "Ping attribute and CSRF"
 categories: web csrf
 ---
 
-# Coucou
+## Introduction
+
+L'attribut ping de l'élément ancre de la spécification HTML permet selon la MDN : 
+
+```
+Contient une liste d'URL séparées par des espaces vers lesquelles sont envoyées des requêtes POST avec le corps PING lorsque l'utilisateur suit le lien. Cet attribut est généralement utilisé pour tracer un utilisateur.
+```
+
+De ce fait, si je crée une page avec le code suivant, une requète POST sera envoyé à `example.com`.
+
+```html
+<a src="/patate" ping="https://example.com">click me !</a>
+```
+
+![](/assets/img/csrf_01.png)
+
+
+Cela peut avoir des utilités dans le sens où cet attribut permet de "traquer" les utilisateurs, cependant si l'utilisateur posséde des cookies sur ce site, les cookies sont envoyés avec la requête, ce qui signifie que si l'utilisateur est authentifié, celui-ci effectue un POST sur un endpoint qui est décidé par l'attaquant.
+
+
+## les attaques CSRF
+
+Une attaque de type Cross-Site Request Forgery (ou injection de requête(s) illégitime(s) par rebond) est une attaque consitant à faire effectuer par un autre utilisateur une requète vers une page menant à de l'extraction d'information où a lui faire effectuer une action sans son consentement. 
+
+Cela peut avoir un impact plus ou moins élévé selon l'action qu'il est possible d'effectuer.
+
+Généralement, ce type d'attaque se fait lorsqu'une xss (stockée ou refléchie) est trouvé sur le site et ainsi l'attaquant peut forger des requètes vers d'autres pages du site sans casser le Same Origin Policy, et comme il s'agit du même site, les cookies de l'utilisateur seront envoyés.
+
+Une autre technique utilisée lorsqu'aucune xss n'est trouvé, l'idée est d'attaquer les endpoints "GET" disponible via l'inclusion d'image sur une page web forgée par l'attaquant et ensuite de faire visiter cette page par la victime. Les requêtes vers les images partant avec les cookies de l'utilisateur, il est alors possible de forger des requêtes GET.
+
+![](/assets/img/csrf_02.png)
+
+Pour plus d'informations, je vous invite à lire l'article du site de l'ANSSI qui présente plus en détail ce type d'attaque : 
+
+[Les attaques de type « cross-site request forgery](https://www.cert.ssi.gouv.fr/information/CERTA-2008-INF-003/)
+
+
+## Exploitation du ping
+
+Bien que nous envoyons via le ping une requète POST, nous avons cependant une contrainte qui limite sérieusement son exploitation: 
+
+- nous ne controlons pas le body de la requête.
+
+En effet pour une requête POST il serait pourtant intéressant de gérer le corps de notre requète, afin de passer les paramètres que nous souhaitons.
+
+Cependant, celle-ci reste parfaitement exploitable sur différentes cibles.
+
+### API
+
+Dans un monde où la plus part des applications se transforment en API web il n'est pas rare de voir des scénarios où nous avons un endpoint `/user/<user_id>/<action>` et que celui-ci ne prend pas de paramètre car il s'agit en vérité d'un toggle. 
+
+Ce type de cas est exploitable, car le corps ne sera alors pas parsé et les paramètres seront pris directement dans l'url.
+
+Prenons la micro API flask ci-dessous, celle-ci est parfaitement vulnérable, car bien que nous envoyons un corps inutile, celui-ci ne sera jamais utilisé, mais l'action sera tout de même effectué.
+
+```python
+from flask import Flask
+
+app = Flask(__name__)
+
+@app.route('/user/<name>/<action>', methods=['POST'])
+def hello_name(name, action):
+    print name
+    return "Hello {}! We will do {} !".format(name, action)
+
+if __name__ == '__main__':
+    app.run()
+```
+
+### Mauvais code PHP
+
+Si nous avons besoin de passer des paramètres aux endpoints, nous sommes certes bloqués. Enfin presque ! Cela serait sans compter sur les meilleurs amis du pentest, les développeurs !
+
+En effet, dans certains cas il est possible de passer les paramètres de notre requête POST dans l'url et ceux-ci seront tout de même utilisés dans le traitement.
+
+Par exemple en PHP, il est parfois possible de croiser l'utilisation de `$_REQUEST` en lieu et place de `$_GET` ou `$_POST`, ce qui a pour effet que lors d'une requête, le paramètre sera d'abord récupéré dans le `$_GET` puis le `$_POST` et enfin dans les cookies.
+
+Prenons par exemple le code php suivant :
+
+```php
+<?php
+session_start();
+
+if(!isset($_SESSION['user'])){
+	$_SESSION['user'] = 'ImFlo';
+}
+
+if($_SERVER['REQUEST_METHOD'] === 'POST') {
+	if (isset($_REQUEST['usr'])) {
+		$_SESSION['user'] = $_REQUEST['usr'];
+	}
+}
+
+echo "<h1>{$_SESSION["user"]}</h1>";
+```
+
+Il nous est parfaitement possible de l'attaquer avec le ping suivant :
+
+```html
+<a href="#" ping="https://victim.local/foo.php?usr=patate">click me</a>
+```
+
+Le paramètre `usr` se trouvant dans l'url et celui-ci étant récupéré via `$_REQUEST`, il sera alors utilisé lorsque la requête POST sera reçu par le site victime.
+
+## Conclusion
+
+Bien que la surface d'attaque de cet attribut soit moindre, du fait qu'il requiert plusieurs conditions préalables pour être utile à une attaque CSRF. Il reste néanmoins intéressant de contrôler si celui-ci n'est pas exploitable, surtout si aucun token anti-csrf n'est présent.
+
+Pour contrôler son exploitation, il est juste necessaire de controler via Burp ou autre si: 
+- les paramètres de la requète sont utiles et utilisés, en les retirant 
+- essayer de les passer dans le query string afin de voir si ce contournement est possible 
+
+Si une de ces conditions est vrai alors vous aurez une CSRF via cette technique.
